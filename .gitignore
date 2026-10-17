@@ -1,0 +1,5 @@
+# Raw reverse-engineering evidence (target content, large, untrusted)
+evidence/raw/
+
+# Cloned REA source repository (not part of this project)
+rea/
