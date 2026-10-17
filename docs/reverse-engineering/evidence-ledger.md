@@ -129,3 +129,22 @@ Each row gives the finding, its class, evidence (source and location), what it d
 | F-52 | 1 | Two paragraph-ID schemes on judgment pages: bare numbers (Mayavati 0–78, Saroj, Pratibha, PSA Sical) and `p_N` | OBSERVED | mayavati-paras.json; J-*.json | Which documents get which scheme | High | — |
 | F-53 | 5 | Mayavati supports the core claims (¶7, ¶10); the "no mini-trial" wording isn't in it | OBSERVED | mayavati-paras.json | — | Med | — |
 | F-54 | — | CAPTCHA cleared by the operator; 6 further judgment loads at about 20–30 s spacing raised no challenge | OBSERVED | scenario ev_e9e6a982…, ev_e97f81db…, ev_22351fe7…, ev_3ec9d40d…, ev_c1e8e116…, ev_dcd61324… | Exact rate threshold | Med | — |
+
+## F. Round 4 (2026-10-17): `evidence/raw/round4/` (SHA-256 in `SHA256SUMS`)
+
+| ID | Layer | Finding | Class | Evidence | Does not prove | Conf. | Next step |
+|---|---|---|---|---|---|---|---|
+| F-55 | 6 | REA static analysis of CaseMine-only scripts: 6 `fetch` request nodes (5 in `caseiq.js`, incl. `/caseiq/filter`; 1 in `search.js`), 15 request-field relations, 265 listener registrations mapped to file:line; 0 in `chat.js` | OBSERVED (static) | ev_09399de6… (summary ev_9dbc1ad2…); rea-requests-listeners.json, rea-listeners-resolved.json | Runtime execution | High | — |
+| F-56 | 3 | `/judgement/similar/{c}/{id}` is defined but never used (dead code) | OBSERVED (static) | `judgement.js` L42 (only occurrence) | Server route existence | High | — |
+| F-57 | 6 | HTML, XHR and PDF responses carry `Server: CaseMineWeb`, a CSP, `no-store` caching and no CDN headers; cookies redacted in capture | OBSERVED | R4-01 ev_567f7282… | Upstream infrastructure | High | — |
+| F-58 | 6 | Static assets use weak ETag `W/"<len>-<mtime ms>"` with max-age 1 year (Tomcat DefaultServlet-style) | OBSERVED (format) / INFERRED (container) | R4-01 (`judgment-pdf.js` headers) | Container identity | Med | — |
+| F-59 | 1 | `/judgement/pdf/in/{id}` returns 200 `application/pdf` same-origin, no redirect, no object-store headers | OBSERVED | R4-01c-pdf-head.json (HEAD only) | Storage backend | High | — |
+| F-60 | 3 | `/judgement/overRuled` returns `{sids, category, sTitles}`; SBP's "Overruled By" list includes Motilal Oswal, which only mentions SBP as overruled | OBSERVED (+ INFERRED semantics) | R4-01 ev_567f7282… | Labelling method | High | Review more lists |
+| F-61 | 3 | Live listener inspection on `#chat-send` shows only jQuery's dispatcher | OBSERVED (limitation) | R4-02 ev_79b8f29b… | — | High | — |
+| F-62 | 4 | `/search/act` returns section-level act records; `/rca/search` returns notification/gazette records | OBSERVED | R4-03 ev_ae510794… | Full schemas | High | — |
+| F-63 | 4 | `/commentary/search` body over budget; a direct request returned 200 with a "Server Error" HTML page; page JS error on that tab | OBSERVED (failure) | R4-03; cdp/commentary_search* (310026c1…) | Contract | Med | — |
+| F-64 | 5 | Reopening a CaseIQ run replays stored results (`/caseiq/summary` identical bytes `bf11bdfb…`); result tabs are client-side | OBSERVED | R4-04 ev_877bac5b…; R4-04b-caseiq-tabs-dom.json | Storage model | High | — |
+| F-65 | 5 | CaseIQ labels "Smart Summary (Powered by GPT)" and "AMICUS (Beta) Turbo" | OBSERVED (labels) | R4-04b-caseiq-tabs-dom.json | Model version | High | — |
+| F-66 | 1 | `/acts/in` browses Central Acts plus per-State acts; `/commentary/in/{court}` lists titled analytical commentaries | OBSERVED | R4-05 ev_3ef97cc4… | Commentary authorship | Med | — |
+| F-67 | 4 | Repeat keyword query `/search/opinion` byte-identical to round 2's second run (`64db9ab5…`); round 1 differed | OBSERVED | R4-03 vs EV-11 vs EV-09 | Determinism in general | Med | — |
+| F-68 | — | `/research` (Research Centre) deliberately not inspected: private account data | Scope decision | — | — | — | — |

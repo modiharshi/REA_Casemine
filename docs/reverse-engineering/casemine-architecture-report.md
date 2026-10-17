@@ -348,3 +348,46 @@ Raw evidence is in `evidence/raw/round3/` (hashes in `SHA256SUMS`). The parser a
 - The trial package allowed 4 AMICUS answers in total.
 
 **For ELI:** generate paragraph links from retrieval metadata, never from model text. Check before rendering that the quoted proposition lies in the linked paragraph or its immediate neighbours. Keep one paragraph-ID scheme across all documents.
+
+---
+
+## Round 4: deliverable completion and architecture update (2026-10-17)
+
+Raw evidence is in `evidence/raw/round4/` (hashes in `SHA256SUMS`). The full REA bundle is `evidence/raw/session-006-evidence-bundle.json` (48 records) plus `round4/session-007-evidence-bundle.json` (52 records). Ledger rows are F-55 to F-68.
+
+New deliverable documents:
+- [features-and-workflows.md](features-and-workflows.md)
+- [routes-and-ui-states.md](routes-and-ui-states.md)
+- [api-contracts.md](api-contracts.md)
+- [gaps-and-hypotheses.md](gaps-and-hypotheses.md)
+- [roadmap.md](roadmap.md)
+
+**Activity:**
+- **Page loads:** 4 (SBP judgment, search results, CaseIQ run 260917, `/acts/in` plus one commentary page).
+- **Direct requests:** 2 (a PDF `HEAD` and one `/commentary/search` call).
+- **AI usage:** none; the CaseIQ run was replayed, not re-run.
+- **Skipped on purpose:** `/research`, a private account area.
+
+### Updated component and data-flow model
+
+```mermaid
+flowchart LR
+  B[Browser: jQuery MPA<br/>judgement.js · search.js · chat.js · caseiq.js · citation-search.js<br/>D3 · pdf.js · ProseMirror] -->|HTML + XHR/fetch + SSE| W["www.casemine.com<br/>Server: CaseMineWeb (OBSERVED)<br/>Java servlet container (INFERRED, ETag format)"]
+  W --- J[("Judgment records<br/>24-hex IDs (ObjectId-like, INFERRED)<br/>bare-number or p_N paragraph IDs (OBSERVED)")]
+  W --- E[("Citation edges<br/>fjid→tjid · sentiment · paragraph snippets (OBSERVED)")]
+  W --- S[["Judgment index<br/>/search/in · /scroll · /graph"]]
+  W --- O[["CiteTEXT excerpt index<br/>/search/opinion _score"]]
+  W --- A2[["Acts index (section-level) /search/act<br/>RCA notifications /rca/search"]]
+  W --- C[("Citation code index<br/>/citationsearch/codes → jid (OBSERVED, gaps)")]
+  W --- P[("Original files<br/>/judgement/pdf served by app, no redirect (OBSERVED); storage UNKNOWN")]
+  W --- AI["AI services<br/>AMICUS /chat/ask/stream (SSE, credit-metered)<br/>CaseIQ /caseiq/* (stored runs)<br/>Smart Summary — 'Powered by GPT' labels (OBSERVED)"]
+  B -. analytics .-> G[Google Analytics / GTM]
+  B -. challenge .-> R[Google reCAPTCHA Enterprise]
+```
+
+**What's new in round 4:**
+- **Web tier:** a custom `Server` header; no CDN headers; dynamic responses are `no-store`.
+- **Original PDFs:** served same-origin by the app server.
+- **CaseIQ:** results are stored and replayed byte-identically.
+- **"Overruled By" lists:** built from edges labelled `overruled`, including judgments that only mention the overruling.
+- **Static analysis:** REA's request and listener extraction succeeded once jQuery was excluded.
