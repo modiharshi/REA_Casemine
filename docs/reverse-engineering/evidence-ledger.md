@@ -97,3 +97,21 @@ Each row gives the finding, its class, evidence (source and location), what it d
 - **ORIGINAL PDF tab:** the role locator failed twice. It worked with the CSS selector `#show-pdf-tab`. The PDF fetch was aborted by pdf.js streaming (`ERR_ABORTED`), so no bytes were retained.
 - **`/judgments/in` while anonymous:** ended at `/login`.
 - **AMICUS submit, attempts 1–2:** sent nothing. Clicking a suggested prompt fills the editor without firing `input`, so `#chat-send` stays disabled; Enter doesn't submit, and `#send-icon-bt` isn't actionable. Exactly one question was sent (attempt 3, EV-17).
+
+## D. Round 2 (2026-10-17): `evidence/raw/round2/` (SHA-256 in `SHA256SUMS`)
+
+| ID | Layer | Finding | Class | Evidence | Does not prove | Conf. | Next step |
+|---|---|---|---|---|---|---|---|
+| F-33 | 5 | In re Interplay (unanchored citation): claims supported at `p_641` / `p_623` | OBSERVED | interplay-search.json (db308b0a…); nav ev_07ae8150…1244 | — | High | — |
+| F-34 | 5 | Interplay `p_523` / `p_15` unrelated, so the anchors weren't borrowed from this co-cited judgment | OBSERVED | interplay-crossanchor.json (d5191b6c…) | Other cross-document schemes | Med | — |
+| F-35 | 5 | Paragraph links are produced by the server (present in raw SSE bytes); `chat.js` builds no `#p_` links | OBSERVED | EV-17 SSE; `chat.js` `_finalizeStream` | Which server stage sets them | High | — |
+| F-36 | 2 | Citation-excerpt index mixes paragraph-ID formats: `tpid` bare number (8/30), `fpid` list strings | OBSERVED | EV-09 / EV-11 `/search/opinion` | That this causes the bad anchors | High | Run the anchor study |
+| F-37 | — | reCAPTCHA Enterprise challenge on a judgment page after rapid loads; not solved | OBSERVED | mayavati-captcha.json (f87b7ef6…), mayavati-structure.json | Rate threshold | High | Space out loads; operator solves the challenge |
+| F-38 | 3 | `citeText` excerpt paging ends at 1,171 (`from=1170` gives 1, `from=1280` gives 0) vs `citedByListSize` 1,288 vs search `citedByCount` 1,173 | OBSERVED | cdp/…from_1000/1170/1280 (a6d053c8…, 117e7850…, 20ff1d3c…) | What the ~117 extra are | High | — |
+| F-39 | 3 | `citesByList` hard-capped at the top 100; "Load More" pages excerpts only | OBSERVED | `judgement.js` L769, L965–980; from_100 body (081740d4…) | — | High | — |
+| F-40 | 3 | `fjid` citing, `tjid` cited: re-verified on 117 incoming records; no duplicate citing judgments in the top 100 | OBSERVED | 837fb851…, from_* bodies | Beyond the sampled pages | High | — |
+| F-41 | 4 | Citation Code Search: hierarchical lookup journal→year→volume→page→judgment ID; `(2021) 2 SCC 163` resolves to `634c5e95…` | OBSERVED | R2-01 ev_d15fbee0…; cdp/citationsearch_* (dfc50e1a…, 7bca9a62…, 20643b18…) | Coverage size | High | — |
+| F-42 | 4 | `(2021) 2 SCC 1` absent from the code index (vol. 2 lists 37 pages, not page 1) | OBSERVED | 4999578a…, 4f53cda1… | Overall coverage rate | High | Sample other reporters |
+| F-43 | 4 | `parallel:` search is token-matched (25 results); target judgments absent | OBSERVED | cdp/search_in_parallel_* (e1c3e027…, 478d35d2…) | Ranking internals | Med | — |
+| F-44 | 5 | CaseIQ flow: `POST /caseiq/text` → run id → `/caseiq/summary` {facts, issues, arguments, holding, reasoning}; other endpoints in code | OBSERVED | R2-04 ev_b303ba1b…; caseiq.js (88f45ffe…) | Ranking model | High | — |
+| F-45 | 5 | CaseIQ results tab labelled "AMICUS (Powered by GPT)" | OBSERVED (label); GPT behind `/chat` INFERRED | caseiq-results-dom.json (38fbd98a…) | Model version; `/chat` provider | Med | — |

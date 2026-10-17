@@ -226,3 +226,72 @@ Solid boxes are confirmed only as **API surfaces**. The storage and engine label
 - **AMICUS sample size:** one answer, so stage labels and answer format may vary with `effort`, `verb` and mode.
 - **Not observed live:** the CaseIQ tool page, `parallel:` citation search, `/citeText/scroll` paging, PDF bytes, and the contents of acts and commentaries.
 - **Server internals are UNKNOWN:** storage, search engine, model provider for normal AMICUS answers, and service decomposition.
+
+---
+
+## Round 2: targeted follow-ups (2026-10-17)
+
+New raw evidence is in `evidence/raw/round2/` (hashes in `SHA256SUMS`). Ledger rows are F-33 to F-45.
+
+**Activity:**
+- **Page loads:** 4. A Google reCAPTCHA Enterprise challenge appeared on the Mayavati judgment page after several judgment loads in quick succession. It was not solved or bypassed.
+- **Small JSON requests:** 9 (citation-code lookup and `citeText` paging).
+- **Server-rendered `parallel:` searches:** 2.
+- **AI usage:** 1 CaseIQ run; 0 new AMICUS questions.
+
+### R2-1. AMICUS paragraph-link audit (all citations)
+
+| Citation | Link target | Correct judgment? | Where the claim is actually supported |
+|---|---|---|---|
+| N.N. Global | `#p_523` | Yes | `p_797` |
+| BSNL v. Nortel, ¶2 | `#p_15` | Yes | `p_122` |
+| BSNL v. Nortel, ¶3 | `#p_15` | Yes | `p_123` |
+| In re Interplay | no paragraph link | Yes | `p_641` ("has not been notified"), with background at `p_623` |
+| Mayavati Trading | no paragraph link | Not checked (blocked by the CAPTCHA) | — |
+
+**How each possible cause stands:**
+- **Frontend builds the link wrongly:** ruled out. `#p_523` and `#p_15` are already in the raw stream from the server, and `chat.js` contains no code that builds `#p_` links; it inserts the server's HTML as received (`_finalizeStream`).
+- **Retrieval failure (wrong document):** ruled out for the checked claims. The right judgment was always cited, and the "Proposition relied on" text closely matches the true paragraphs (`p_797`, `p_122`, `p_123`).
+- **Links borrowed from a judgment cited in the same answer:** ruled out for In re Interplay. Its `p_523` and `p_15` hold unrelated text.
+- **Printed paragraph number confused with `p_N`:** not supported. The true paragraphs are printed ¶323 and ¶31; the links were 523 and 15.
+- **Mismatch between paragraph-ID schemes:** plausible, unproven. The citation-excerpt index mixes formats (`tpid` is a bare number in 8 of 30 results; `fpid` is sometimes a list string such as `"[p_7]"`). Both wrong links point *earlier* in the same document by uneven amounts (−274, −107/−108), which rules out a fixed offset.
+- **Wrong passage selected, or the model invented the ID:** unknown; can't be told apart from outside the server.
+
+### R2-2. Citation count reconciliation (Vidya Drolia, incoming citations)
+
+| Measurement | Value |
+|---|---|
+| `citedByListSize`, `opinionCount`, and the sum of the year histogram (`opinionMap`, 2021–2026) | 1,288 |
+| Search index `citedByCount` | 1,173 |
+| **Excerpts retrievable by paging with `from`** (`from=1170` returns 1 item, `from=1280` returns 0) | **1,171** |
+| Citing-judgments list (`citesByList`) | always the same top 100 ("Showing top 100 of N", `judgement.js` L769) |
+
+- **Direction:** rechecked on 117 records. `tjid` is always the cited judgment and `fjid` the citing one.
+- **Duplicates:** none in the first 100 edges (100 distinct edge IDs, 100 distinct citing judgments).
+- **Paging:** "Load More" pages the excerpt list only, 10 at a time via `from` (L965–980). The citing-judgments list never goes past 100.
+- **Conclusion:** the excerpts you can actually retrieve (1,171) almost match the search index's count (1,173). The 1,288 headline counts about 117 relationships that can't be retrieved. Their cause is UNKNOWN; candidates are edges without excerpts, hidden citing judgments (`noIndex`/`sensitive`/`junk`), or a stale counter.
+
+### R2-3. Exact-citation search and CaseIQ
+
+**Citation Code Search (`/citationsearch`, `citation-search.js`)**
+- **Route:** hierarchical lookups via `/citationsearch/codes?type=journal|year|volume|page` resolve to a judgment ID. `/citationsearch/judgement?id=&citationcode=` then returns the standard search-record shape.
+- **Test lookup:** `(2021) 2 SCC 163` resolved to `634c5e95…`.
+- **Coverage gap:** SCC 2021 volume 2 lists only 37 starting pages; page 1 is missing, so `(2021) 2 SCC 1` (Vidya Drolia) returns `[]`.
+- **Ambiguous empty result:** the code shows a commented-out "daily limit exhausted" message on the same empty-result path.
+
+**`parallel:` mode of the main search**
+- It returns about 25 results matched on individual tokens (`2021`, `SCC`, `2`, `1`).
+- Neither target judgment appeared on the first page. It does not resolve citations.
+
+**CaseIQ (`caseiq.js` v1.1.1)**
+- **Submission:** `POST /caseiq/text|url|docupload` returns a run ID, then the browser redirects to `/caseiq?id=…`.
+- **Requests that followed:** `/caseiq/summary` returned `{facts, issues, petitioner arguments, respondent arguments, holding, reasoning}`, and `/caseiq/arguments` returned HTML.
+- **Other endpoints in the code:** `/caseiq/opinion?sort=_score`, `/paraMatch`, `/citetext`, `/filter`, `/askai/{id}`, `/uscitation`.
+- **Results page:** 46 linked judgments, overlapping with AMICUS. Tabs: CitationsFound, SuggestedPrecedents, SuggestedArguments, and **"AMICUS (Powered by GPT)"**.
+- **FAQ:** describes extraction of cited cases, statutes and argument patterns, a "predictive algorithm", and OCR for scans.
+- **Provider:** "Powered by GPT" is OBSERVED as a UI label. GPT use behind `/chat` AMICUS is INFERRED, medium confidence.
+
+### R2 implications for ELI
+- **Paragraph links:** store one canonical paragraph ID; attach links from the retrieved passage's metadata, never from model output; check that the quoted text appears in the linked paragraph before rendering.
+- **Counts:** derive displayed counts from the same query that serves the list; report "retrievable" separately from "total".
+- **Citation resolution:** a deterministic reporter table with measured coverage and explicit "not found" or "rate limited" states.
