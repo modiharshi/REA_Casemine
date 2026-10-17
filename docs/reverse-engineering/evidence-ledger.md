@@ -115,3 +115,17 @@ Each row gives the finding, its class, evidence (source and location), what it d
 | F-43 | 4 | `parallel:` search is token-matched (25 results); target judgments absent | OBSERVED | cdp/search_in_parallel_* (e1c3e027…, 478d35d2…) | Ranking internals | Med | — |
 | F-44 | 5 | CaseIQ flow: `POST /caseiq/text` → run id → `/caseiq/summary` {facts, issues, arguments, holding, reasoning}; other endpoints in code | OBSERVED | R2-04 ev_b303ba1b…; caseiq.js (88f45ffe…) | Ranking model | High | — |
 | F-45 | 5 | CaseIQ results tab labelled "AMICUS (Powered by GPT)" | OBSERVED (label); GPT behind `/chat` INFERRED | caseiq-results-dom.json (38fbd98a…) | Model version; `/chat` provider | Med | — |
+
+## E. Round 3 (2026-10-17): `evidence/raw/round3/` (SHA-256 in `SHA256SUMS`)
+
+| ID | Layer | Finding | Class | Evidence | Does not prove | Conf. | Next step |
+|---|---|---|---|---|---|---|---|
+| F-46 | 5 | 3 new AMICUS answers captured (Q01–Q03); 80 inline citations across 4 answers, 8 distinct paragraph-linked pairs | OBSERVED | Q01 ev_8a21a4f2…, Q02 ev_e4cfc434…, Q03 ev_a4331b64…; Q0*-parsed.json | Behaviour on other topics or modes | High | — |
+| F-47 | 5 | Trial credits exhausted at the 5th AMICUS question (`event: error`) | OBSERVED | Q04 ev_cee06df2… | Pricing | High | — |
+| F-48 | 5 | Link accuracy: 6/8 support the claim, 1 off by one (PSA Sical 55→56), 2 far (N.N. Global, BSNL); all misses point earlier | OBSERVED (manual reading plus lexical screen) | anchor_study.json; J-*.json dumps | Error rate at scale | Med (n=8) | Larger sample with a paid plan |
+| F-49 | 5 | AMICUS link format matches each page's ID scheme (bare vs `p_N`) in 8/8 | OBSERVED | Q0*-parsed.json vs J-*.json ids | — | High | — |
+| F-50 | 5 | Printed-number confusion rejected (PSA Sical printed ¶55 is ID 106, irrelevant) | OBSERVED | J-6101a651.json | — | High | — |
+| F-51 | 5 | Most-cited-paragraph source rejected: wrong links have no `citedParas` entry | OBSERVED | cdp/judgement_citedParas_* | — | High | — |
+| F-52 | 1 | Two paragraph-ID schemes on judgment pages: bare numbers (Mayavati 0–78, Saroj, Pratibha, PSA Sical) and `p_N` | OBSERVED | mayavati-paras.json; J-*.json | Which documents get which scheme | High | — |
+| F-53 | 5 | Mayavati supports the core claims (¶7, ¶10); the "no mini-trial" wording isn't in it | OBSERVED | mayavati-paras.json | — | Med | — |
+| F-54 | — | CAPTCHA cleared by the operator; 6 further judgment loads at about 20–30 s spacing raised no challenge | OBSERVED | scenario ev_e9e6a982…, ev_e97f81db…, ev_22351fe7…, ev_3ec9d40d…, ev_c1e8e116…, ev_dcd61324… | Exact rate threshold | Med | — |

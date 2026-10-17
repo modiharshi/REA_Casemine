@@ -295,3 +295,56 @@ New raw evidence is in `evidence/raw/round2/` (hashes in `SHA256SUMS`). Ledger r
 - **Paragraph links:** store one canonical paragraph ID; attach links from the retrieved passage's metadata, never from model output; check that the quoted text appears in the linked paragraph before rendering.
 - **Counts:** derive displayed counts from the same query that serves the list; report "retrievable" separately from "total".
 - **Citation resolution:** a deterministic reporter table with measured coverage and explicit "not found" or "rate limited" states.
+
+---
+
+## Round 3: AMICUS paragraph-link study (2026-10-17)
+
+Raw evidence is in `evidence/raw/round3/` (hashes in `SHA256SUMS`). The parser and scoring scripts are `parse_amicus.py` and `anchor_study.py`. Ledger rows are F-46 to F-54.
+
+**Design**
+- Ask varied AMICUS questions through the normal UI (`#chat-textarea`, then `#chat-send`).
+- Parse every inline citation and every "Proposition relied on" from the raw SSE stream.
+- Load each judgment cited with a paragraph link, about 20–30 s apart, and dump all its paragraphs from the page with no extra requests.
+- Score every paragraph against the claim, then read each miss by hand.
+
+**Sample:**
+- Three new answers: Section 482 quashing, dying declarations, and Section 34 award challenges.
+- The fourth question was refused (`event: error`, "You have exhausted your free trial credits"). No subscription was bought.
+- With the original answer, the study covers 4 answers, 80 inline citations, and **8 distinct paragraph-linked (judgment, paragraph) pairs**.
+
+| Answer | Judgment | Link target | Verdict |
+|---|---|---|---|
+| Original | N.N. Global | `p_523` | Wrong: support at `p_797` (−274) |
+| Original | BSNL v. Nortel | `p_15` | Wrong: support at `p_122`/`p_123` (−107/−108) |
+| Q1 | Saroj Kumar Sahoo | `8` | **Correct** (best match) |
+| Q1 | Pratibha | `12` | **Supports** ("exercised sparingly… should not embark upon an inquiry") |
+| Q1 | Neeharika | `p_118` | **Supports** (¶63, "only in exceptional cases"); ¶65 at `p_120` fits one sentence better |
+| Q2 | Mukesh (dying declaration) | `p_1285` | **Supports** (the well-known tests) |
+| Q3 | PSA Sical | `55` | **Off by one**: support at `56` (¶43, "not… an appellate court… reappreciate") |
+| Q3 | Devas | `p_372` | **Correct** (best match) |
+
+**Result:** 6 of 8 links point to a supporting paragraph, 1 is one paragraph early, and 2 are far off. Both far misses came from the first answer. Every miss points *earlier* than the true paragraph.
+
+**Possible causes:**
+| Possible cause | Verdict | Evidence |
+|---|---|---|
+| Frontend builds the link wrongly | Ruled out | Links are in the raw SSE bytes; `chat.js` builds no `#p_` links (F-35) |
+| Link format mismatch (bare number vs `p_N`) | Ruled out as a *format* error | AMICUS used the matching format in 8/8: bare numbers for judgments whose pages use bare IDs (Saroj, Pratibha, PSA Sical; also Mayavati's page), `p_N` elsewhere |
+| Printed paragraph number used as the ID | Rejected | PSA Sical's paragraph printed "55." is ID `106` (royalty clauses, irrelevant); also rejected for N.N. Global and BSNL |
+| Link taken from CaseMine's most-cited-paragraph data | Rejected | Wrong links `p_523`/`p_15` have no entry in `/judgement/citedParas` |
+| Link marks the start of a retrieved multi-paragraph chunk | Possible for the −1 case only | Not testable from outside |
+| Model or post-processor chooses the ID without validation | Possible | Not testable from outside |
+
+**Conclusion:**
+- AMICUS paragraph links usually land on or next to the right paragraph (6/8 support the claim), using the correct ID format for each document.
+- Far misses happen, so links aren't validated before rendering.
+- The cause on the server side is UNKNOWN.
+
+**Also observed:**
+- Judgment pages use two paragraph-ID schemes: bare-number IDs (`0`–`78` on Mayavati) and `p_N` IDs.
+- `/judgement/citedParas` keys follow the page's scheme.
+- AMICUS answers can include many unlinked citations (22–28 per answer here).
+- The trial package allowed 4 AMICUS answers in total.
+
+**For ELI:** generate paragraph links from retrieval metadata, never from model text. Check before rendering that the quoted proposition lies in the linked paragraph or its immediate neighbours. Keep one paragraph-ID scheme across all documents.
